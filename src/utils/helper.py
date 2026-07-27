@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 import jwt
-from uuid import UUID
 
 from src.models.users import User as UserModel
 from src.utils.db import get_db
@@ -42,21 +41,21 @@ def is_autheticated(
         )
 
     user_id = payload.get("_id")
-    if not isinstance(user_id, str) or not user_id:
+    if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
 
     try:
-        user_uuid = UUID(user_id)
-    except ValueError:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
 
-    user: UserModel | None = db.query(UserModel).filter(UserModel.id == user_uuid).first()
+    user: UserModel | None = db.query(UserModel).filter(UserModel.id == user_id).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
