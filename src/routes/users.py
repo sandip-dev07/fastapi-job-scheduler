@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from src.utils.db import get_db
 from src.interfaces.users import IUserCreate, IUsersListResponse, IUserLogin, IUsersLoginResponse
@@ -22,7 +22,7 @@ def get_password_hash(password):
 users_router = APIRouter(prefix="/users")
 
 @users_router.post("/signup", status_code=status.HTTP_201_CREATED)
-async def signup(body: IUserCreate, db: Session = Depends(get_db)):
+async def signup(body: IUserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     
     try:
         # username validation
@@ -51,7 +51,10 @@ async def signup(body: IUserCreate, db: Session = Depends(get_db)):
         db.commit()
         
         # send email
-        await send_mail([user.email])
+        background_tasks.add_task(
+            send_mail,
+            emails=[user.email]
+        )
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(
@@ -79,6 +82,7 @@ async def get_users(db: Session = Depends(get_db)):
 @users_router.post("/login", response_model=IUsersLoginResponse, status_code=status.HTTP_200_OK)
 async def login(
     body: IUserLogin,
+    background_tasks: BackgroundTasks,
     response: Response,
     db: Session = Depends(get_db)
 ):
@@ -107,6 +111,13 @@ async def login(
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             samesite="lax",
             secure=False,
+        )
+        
+        
+         # send email
+        background_tasks.add_task(
+            send_mail,
+            emails=[user.email]
         )
     
         
