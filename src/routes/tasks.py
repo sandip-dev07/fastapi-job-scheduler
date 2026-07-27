@@ -18,11 +18,11 @@ tasks_router = APIRouter(
 async def create_task(
     body: TaskCreate,
     db=Depends(get_db),
-    current_user: UserModel = Depends(is_autheticated),
+    user: UserModel = Depends(is_autheticated),
 ):
 
     try:
-        task = TaskModel(**body.model_dump(), user_id=current_user.id)
+        task = TaskModel(**body.model_dump(), user_id=user.id)
         db.add(task)
         db.commit()
         db.refresh(task)
@@ -44,10 +44,10 @@ async def create_task(
 @tasks_router.get("/", status_code=status.HTTP_200_OK)
 async def get_tasks(
     db=Depends(get_db),
-    current_user: UserModel = Depends(is_autheticated),
+    user: UserModel = Depends(is_autheticated),
 ):
     
-    tasks = db.query(TaskModel).filter(TaskModel.user_id == current_user.id).limit(50).all()
+    tasks = db.query(TaskModel).filter(TaskModel.user_id == user.id).limit(50).all()
     return {
         "message": "Tasks fetched successfully",
         "data": tasks
@@ -58,12 +58,12 @@ async def get_tasks(
 async def get_task(
     task_id: int,
     db=Depends(get_db),
-    current_user: UserModel = Depends(is_autheticated),
+    user: UserModel = Depends(is_autheticated),
 ):
     
     task = db.query(TaskModel).filter(
         TaskModel.id == task_id,
-        TaskModel.user_id == current_user.id,
+        TaskModel.user_id == user.id,
     ).first()
     
     if not task:
@@ -79,12 +79,12 @@ async def get_task(
 async def delete_task(
     task_id: int,
     db = Depends(get_db),
-    current_user: UserModel = Depends(is_autheticated),
+    user: UserModel = Depends(is_autheticated),
 ):
     
     task = db.query(TaskModel).filter(
         TaskModel.id == task_id,
-        TaskModel.user_id == current_user.id,
+        TaskModel.user_id == user.id,
     ).first()
     
     if not task:
@@ -111,12 +111,12 @@ async def update_task(
     task_id: int,
     body: TaskUpdate,
     db = Depends(get_db),
-    current_user: UserModel = Depends(is_autheticated),
+    user: UserModel = Depends(is_autheticated),
 ):
     
     task = db.query(TaskModel).filter(
         TaskModel.id == task_id,
-        TaskModel.user_id == current_user.id,
+        TaskModel.user_id == user.id,
     ).first()
     
     if not task:

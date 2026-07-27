@@ -9,6 +9,7 @@ import jwt
 from pwdlib import PasswordHash
 from pwdlib.exceptions import UnknownHashError
 from datetime import datetime, timedelta
+from src.utils.mail import send_mail
 
 # Security
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -48,6 +49,9 @@ async def signup(body: IUserCreate, db: Session = Depends(get_db)):
         
         db.add(user)
         db.commit()
+        
+        # send email
+        await send_mail([user.email])
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(
@@ -104,6 +108,7 @@ async def login(
             samesite="lax",
             secure=False,
         )
+    
         
     except UnknownHashError:
         raise HTTPException(status_code=401, detail="Stored password hash is invalid")
